@@ -42,20 +42,25 @@ export function ScoreForm({ onSubmit }) {
     <div>
       {error && <div className="error">{error}</div>}
 
-      <div className="muted small" style={{ marginBottom: 6 }}>จำนวนคะแนน</div>
-      <div className="row" style={{ marginBottom: 12 }}>
-        {QUICK.map((n) => (
-          <button key={n} type="button" className={`btn-sm ${amount === String(n) ? 'btn-primary' : ''}`} onClick={() => setAmount(String(n))}>{n}</button>
-        ))}
+      <div className="amount-box">
+        <label className="amount-label" htmlFor="score-amount">จำนวนคะแนน</label>
         <input
+          id="score-amount"
+          className="amount-input"
           type="number"
+          inputMode="decimal"
           min="0"
           step="any"
-          placeholder="จำนวน"
+          placeholder="0"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          style={{ width: 100 }}
+          autoFocus
         />
+        <div className="amount-quick">
+          {QUICK.map((n) => (
+            <button key={n} type="button" className={amount === String(n) ? 'btn-primary' : ''} onClick={() => setAmount(String(n))}>{n}</button>
+          ))}
+        </div>
       </div>
 
       <div className="row muted small" style={{ justifyContent: 'space-between', marginBottom: 6 }}>

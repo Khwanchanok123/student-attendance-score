@@ -83,7 +83,7 @@ export default function SessionsPage() {
               <th className="num">เข้า-ออกครบ</th>
               <th className="num">ไม่ผ่าน</th>
               <th className="num">คะแนนรวมคาบ</th>
-              <th>สร้าง / อัปเดตล่าสุด</th>
+              <th>อัปเดตล่าสุด</th>
               <th></th>
             </tr>
           </thead>

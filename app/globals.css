@@ -186,12 +186,19 @@ details.card summary { cursor: pointer; }
 
 .rank { font-weight: 700; font-size: 1.05rem; }
 
-.session-meta { margin-top: 4px; line-height: 1.6; }
-.session-meta strong { font-weight: 600; color: var(--text); }
+.session-meta { line-height: 1.5; }
 
 .preset-list { display: flex; flex-direction: column; }
 .preset-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .preset-row:last-child { border-bottom: none; }
+
+.amount-box { background: var(--primary-soft); border: 1px solid #c9d8fb; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+.amount-label { display: block; font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
+.amount-input { width: 100%; font-size: 2.25rem; font-weight: 700; text-align: center; padding: 10px; border: 2px solid var(--primary); border-radius: 10px; color: var(--primary); background: #fff; }
+.amount-input:focus { outline: 3px solid #c9d8fb; }
+.amount-input::placeholder { color: #c3cbd6; font-weight: 400; }
+.amount-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.amount-quick button { font-size: 1.1rem; font-weight: 600; padding: 10px 0; }
 
 .preset-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
