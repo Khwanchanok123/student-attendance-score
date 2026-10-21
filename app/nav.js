@@ -33,7 +33,7 @@ export default function Nav() {
   return (
     <header className="topbar">
       <div className="container topbar-inner">
-        <Link href="/" className="brand">📋 เช็คชื่อ & คะแนน</Link>
+        <Link href="/" className="brand">📋 Attendent Score</Link>
         <nav className="nav">
           {links.map((l) => (
             <Link key={l.href} href={l.href} className={isActive(l.href) ? 'active' : ''}>
