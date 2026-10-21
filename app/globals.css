@@ -170,9 +170,6 @@ details.card summary { cursor: pointer; }
 .log-item:last-child { border-bottom: none; }
 .log-item .delta { min-width: 40px; }
 
-.presets { display: flex; flex-direction: column; gap: 6px; }
-.preset { text-align: left; white-space: normal; padding: 8px 12px; font-weight: 400; }
-.preset.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 500; }
 
 .combo { position: relative; }
 .combo input { width: 100%; }
@@ -192,7 +189,14 @@ details.card summary { cursor: pointer; }
 .session-meta { margin-top: 4px; line-height: 1.6; }
 .session-meta strong { font-weight: 600; color: var(--text); }
 
+.preset-list { display: flex; flex-direction: column; }
+.preset-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.preset-row:last-child { border-bottom: none; }
+
+.preset-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
 @media (max-width: 600px) {
+  .preset-pickers { grid-template-columns: 1fr; }
   .user-box { margin-left: 0; }
   .topbar-inner { height: auto; padding-top: 10px; padding-bottom: 10px; flex-direction: column; align-items: flex-start; }
   h1 { font-size: 1.3rem; }

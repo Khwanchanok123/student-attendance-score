@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { formatDateTime, formatDelta } from '@/lib/api';
-import { REASON_PRESETS } from '@/lib/reasons';
+import { api, formatDateTime, formatDelta } from '@/lib/api';
+import { SYSTEM_REASON_PRESETS } from '@/lib/reasons';
 
 const QUICK = [1, 2, 5, 10];
 
@@ -13,6 +14,12 @@ export function ScoreForm({ onSubmit }) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [presets, setPresets] = useState(null);
+
+  // หมายเหตุของฉัน (ของผู้ใช้ที่ล็อกอินอยู่ ตั้งค่าได้ที่ /settings)
+  useEffect(() => {
+    api('/api/presets').then(setPresets).catch(() => setPresets([]));
+  }, []);
 
   async function submit(sign) {
     const n = Number(amount);
@@ -51,15 +58,22 @@ export function ScoreForm({ onSubmit }) {
         />
       </div>
 
-      <div className="muted small" style={{ marginBottom: 6 }}>หมายเหตุ (เลือกจากรายการ หรือพิมพ์เอง)</div>
-      <div className="presets">
-        {REASON_PRESETS.map((p) => (
-          <button key={p} type="button" className={`preset ${reason === p ? 'active' : ''}`} onClick={() => setReason(p)}>{p}</button>
-        ))}
+      <div className="row muted small" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
+        <span>หมายเหตุ (เลือกจากรายการแล้วแก้ต่อได้ หรือพิมพ์เอง)</span>
+        <Link href="/settings">⚙ จัดการหมายเหตุของฉัน</Link>
+      </div>
+      <div className="preset-pickers">
+        <SearchSelect
+          label="หมายเหตุของฉัน"
+          options={presets?.map((p) => p.text)}
+          empty={<>ยังไม่มี — เพิ่มได้ที่ <Link href="/settings">หน้าตั้งค่า</Link></>}
+          onPick={setReason}
+        />
+        <SearchSelect label="หมายเหตุระบบ" options={SYSTEM_REASON_PRESETS} onPick={setReason} />
       </div>
       <input
         style={{ width: '100%', margin: '8px 0' }}
-        placeholder="หรือพิมพ์หมายเหตุเอง..."
+        placeholder="พิมพ์หมายเหตุ หรือเลือกจากรายการด้านบน..."
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit(1)}
@@ -68,6 +82,63 @@ export function ScoreForm({ onSubmit }) {
         <button className="btn-plus grow" disabled={saving} onClick={() => submit(1)}>＋ เพิ่มคะแนน</button>
         <button className="btn-minus grow" disabled={saving} onClick={() => submit(-1)}>－ ลดคะแนน</button>
       </div>
+    </div>
+  );
+}
+
+// ดรอปดาวน์ที่พิมพ์ค้นหาได้: เลือกแล้วเรียก onPick(ข้อความ) และล้างช่องค้นหา
+// options = รายการข้อความ (undefined = กำลังโหลด)
+function SearchSelect({ label, options, empty, onPick }) {
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+
+  const query = q.trim().toLowerCase();
+  const items = (options ?? []).filter((t) => t.toLowerCase().includes(query));
+
+  function pick(text) {
+    if (text === undefined) return;
+    onPick(text);
+    setQ('');
+    setOpen(false);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, items.length - 1)); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
+    if (e.key === 'Enter') { e.preventDefault(); if (open) pick(items[active]); }
+    if (e.key === 'Escape') setOpen(false);
+  }
+
+  return (
+    <div className="combo">
+      <div className="muted small" style={{ marginBottom: 4 }}>{label}</div>
+      <input
+        type="search"
+        placeholder={`🔍 ค้นหา${label}...`}
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); setActive(0); }}
+        onFocus={() => { setOpen(true); setActive(0); }}
+        onBlur={() => setOpen(false)}
+        onKeyDown={onKeyDown}
+      />
+      {open && (
+        <div className="combo-menu">
+          {!options && <div className="combo-empty">กำลังโหลด...</div>}
+          {options && options.length === 0 && <div className="combo-empty">{empty || 'ไม่มีรายการ'}</div>}
+          {options?.length > 0 && items.length === 0 && <div className="combo-empty">ไม่พบ "{q}"</div>}
+          {items.map((t, i) => (
+            <div
+              key={t + i}
+              className={`combo-item ${i === active ? 'active' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); pick(t); }}
+              onMouseEnter={() => setActive(i)}
+            >
+              {t}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

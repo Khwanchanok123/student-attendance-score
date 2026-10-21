@@ -48,6 +48,7 @@ export default function Nav() {
         {user && (
           <div className="user-box">
             <span className="muted small">👤 {user.display_name}</span>
+            <Link href="/settings" className={`btn btn-sm ${isActive('/settings') ? 'btn-primary' : ''}`}>⚙ ตั้งค่า</Link>
             <button className="btn-sm" onClick={logout}>ออกจากระบบ</button>
           </div>
         )}
