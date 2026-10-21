@@ -187,6 +187,8 @@ details.card summary { cursor: pointer; }
 .pill-warn { background: var(--warn-soft); color: var(--warn); font-weight: 500; font-size: 0.78rem; white-space: normal; }
 .combo-label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
+.rank { font-weight: 700; font-size: 1.05rem; }
+
 @media (max-width: 600px) {
   .user-box { margin-left: 0; }
   .topbar-inner { height: auto; padding-top: 10px; padding-bottom: 10px; flex-direction: column; align-items: flex-start; }

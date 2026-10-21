@@ -33,14 +33,17 @@ export default function SummaryPage() {
         total: cells.reduce((sum, c) => sum + (c?.counted ? recordTotal(c) : 0), 0) + st.outside_score,
       };
     });
+    // เรียงคะแนนรวมจากมากไปน้อย (คะแนนเท่ากันเรียงตามรหัส) และให้อันดับร่วมกัน เช่น 1, 2, 2, 4
+    rows.sort((a, b) => b.total - a.total);
+    rows.forEach((r, i) => { r.rank = i > 0 && r.total === rows[i - 1].total ? rows[i - 1].rank : i + 1; });
     const sessionTotals = data.sessions.map((_, i) => rows.reduce((sum, r) => sum + (r.cells[i] ? recordTotal(r.cells[i]) : 0), 0));
     return { rows, sessionTotals, grand: rows.reduce((s, r) => s + r.total, 0) };
   }, [data]);
 
   function exportCsv() {
-    const head = ['รหัส', 'ชื่อ', ...data.sessions.map((s) => `${s.date} ${s.title}`), 'นอกคลาส', 'เข้าครบ (คาบ)', 'คะแนนรวม'];
+    const head = ['อันดับ', 'รหัส', 'ชื่อ', ...data.sessions.map((s) => `${s.date} ${s.title}`), 'นอกคลาส', 'เข้าครบ (คาบ)', 'คะแนนรวม'];
     const lines = table.rows.map((r) => [
-      r.code || '', r.name,
+      r.rank, r.code || '', r.name,
       ...r.cells.map((c) => {
         if (!c) return '';
         const status = passStatus(c);
@@ -65,7 +68,7 @@ export default function SummaryPage() {
       <div className="page-head">
         <div>
           <h1>สรุปคะแนน</h1>
-          <div className="muted">คะแนนของนักเรียนแต่ละคนในทุกคาบ</div>
+          <div className="muted">เรียงตามคะแนนรวมจากมากไปน้อย</div>
         </div>
         {table && table.rows.length > 0 && <button onClick={exportCsv}>⬇ ดาวน์โหลด Excel (CSV)</button>}
       </div>
@@ -87,6 +90,7 @@ export default function SummaryPage() {
             <table>
               <thead>
                 <tr>
+                  <th className="center">อันดับ</th>
                   <th>รหัส</th>
                   <th>ชื่อ</th>
                   {data.sessions.map((s) => (
@@ -106,6 +110,7 @@ export default function SummaryPage() {
               <tbody>
                 {table.rows.map((r) => (
                   <tr key={r.id}>
+                    <td className="center"><span className={`rank rank-${r.rank}`}>{r.rank <= 3 && r.total > 0 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span></td>
                     <td className="muted">{r.code || '-'}</td>
                     <td style={{ whiteSpace: 'nowrap' }}><Link href={`/students/${r.id}`}>{r.name}</Link></td>
                     {r.cells.map((c, i) => (
@@ -123,7 +128,7 @@ export default function SummaryPage() {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={2}>รวมทั้งหมด</td>
+                  <td colSpan={3}>รวมทั้งหมด</td>
                   {table.sessionTotals.map((t, i) => <td key={i} className="num">{t}</td>)}
                   <td className="num">{formatDelta(table.rows.reduce((s, r) => s + r.outside_score, 0))}</td>
                   <td></td>
