@@ -1,6 +1,6 @@
 import './globals.css';
 import Nav from './nav';
-import { APP_NAME } from '@/lib/brand';
+import { APP_NAME, FOOTER_ICON, FOOTER_TEXT } from '@/lib/brand';
 
 export const metadata = {
   title: APP_NAME,
@@ -21,6 +21,9 @@ export default function RootLayout({ children }) {
       <body>
         <Nav />
         <main className="container">{children}</main>
+        <footer className="site-footer">
+          <span className="footer-icon" aria-hidden="true">{FOOTER_ICON}</span> {FOOTER_TEXT}
+        </footer>
       </body>
     </html>
   );

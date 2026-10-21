@@ -23,12 +23,18 @@ body {
   font-family: 'Sarabun', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 16px;
   line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 a { color: var(--primary); text-decoration: none; }
 
 .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
-main.container { padding-top: 24px; padding-bottom: 48px; }
+main.container { padding-top: 24px; padding-bottom: 48px; flex: 1; width: 100%; }
+
+.site-footer { text-align: center; padding: 18px 16px 22px; border-top: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 0.9rem; letter-spacing: 0.02em; }
+.site-footer .footer-icon { display: inline-block; font-size: 1.1rem; margin-right: 4px; }
 
 .topbar { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
 .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; }
@@ -115,7 +121,7 @@ td.center, th.center { text-align: center; }
 
 .user-box { display: flex; align-items: center; gap: 8px; margin-left: auto; white-space: nowrap; }
 
-.login-wrap { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+.login-wrap { min-height: 70vh; display: flex; align-items: center; justify-content: center; }
 .login-card { width: 100%; max-width: 380px; padding: 24px; }
 .field { display: block; margin-bottom: 12px; }
 .field span { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 4px; }
