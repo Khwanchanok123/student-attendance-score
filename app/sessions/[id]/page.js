@@ -8,6 +8,7 @@ import { LESSONS, PREREQUISITES, lessonName, requirementText } from '@/lib/lesso
 import { ATTENDANCE_POINTS, PASS_SCORE, attendancePoints, isComplete, passStatus, recordTotal } from '@/lib/scoring';
 import PassTag, { PrereqTag } from '../../pass-tag';
 import { LogList, Modal, ScoreForm } from '../../score-form';
+import SessionMeta from '../../session-meta';
 
 export default function SessionPage() {
   const { id } = useParams();
@@ -27,8 +28,13 @@ export default function SessionPage() {
 
   useEffect(() => { load(); }, [id]);
 
-  const patchRow = (studentId, rec) =>
+  // โหลดเฉพาะข้อมูลคาบใหม่ เพื่ออัปเดตบรรทัด "อัปเดตล่าสุดโดย" หลังมีการเปลี่ยนแปลงในคาบ
+  const refreshMeta = () => api(`/api/sessions/${id}`).then((d) => setSession(d.session)).catch(() => {});
+
+  const patchRow = (studentId, rec) => {
     setRows((rs) => rs.map((r) => (r.student_id === studentId ? { ...r, ...rec } : r)));
+    refreshMeta();
+  };
 
   async function update(studentId, patch) {
     setBusy((b) => ({ ...b, [studentId]: true }));
@@ -69,6 +75,7 @@ export default function SessionPage() {
     try {
       await api(`/api/sessions/${id}/students?student_id=${r.student_id}`, { method: 'DELETE' });
       setRows((rs) => rs.filter((x) => x.student_id !== r.student_id));
+      refreshMeta();
     } catch (e) {
       setError(e.message);
     }
@@ -148,6 +155,7 @@ export default function SessionPage() {
               {' · '}
               <a href="#" style={{ color: 'var(--danger)' }} onClick={(e) => { e.preventDefault(); removeSession(); }}>ลบคาบ</a>
             </div>
+            <SessionMeta session={session} inline />
           </div>
         )}
         {rows.length > 0 && (

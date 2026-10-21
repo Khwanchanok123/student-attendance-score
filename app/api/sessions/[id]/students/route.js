@@ -1,11 +1,11 @@
-import { db, logScores } from '@/lib/db';
+import { db, logScores, touchSession } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { json, route } from '@/lib/http';
 import { recordTotal } from '@/lib/scoring';
 
 // เพิ่มนักเรียนเข้าคาบ: { student_ids: [1, 2] } (คนที่มีอยู่แล้ว) และ/หรือ { new_students: [{ code, name }] } (สร้างใหม่)
 export const POST = route(async (req, { params }) => {
-  await requireUser();
+  const user = await requireUser();
   const sid = Number((await params).id);
   const body = await req.json();
   const sql = await db();
@@ -25,6 +25,7 @@ export const POST = route(async (req, { params }) => {
   const added = await sql`INSERT INTO records (session_id, student_id)
     SELECT ${sid}, id FROM students WHERE id = ANY(${ids}::int[])
     ON CONFLICT DO NOTHING RETURNING student_id`;
+  await touchSession(sql, sid, user);
   return json({ added: added.length }, 201);
 });
 
@@ -41,5 +42,6 @@ export const DELETE = route(async (req, { params }) => {
       studentId: stu, delta: -recordTotal(rec), reason: 'นำออกจากคาบ',
     }]);
   }
+  if (rec) await touchSession(sql, sid, user);
   return json({ ok: true });
 });

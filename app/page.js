@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api, formatDate, today } from '@/lib/api';
 import { LESSONS, lessonName } from '@/lib/lessons';
+import SessionMeta from './session-meta';
 
 export default function SessionsPage() {
   const [data, setData] = useState(null);
@@ -82,13 +83,14 @@ export default function SessionsPage() {
               <th className="num">เข้า-ออกครบ</th>
               <th className="num">ไม่ผ่าน</th>
               <th className="num">คะแนนรวมคาบ</th>
+              <th>สร้าง / อัปเดตล่าสุด</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {!data && !error && <tr><td colSpan={7} className="empty">กำลังโหลด...</td></tr>}
+            {!data && !error && <tr><td colSpan={8} className="empty">กำลังโหลด...</td></tr>}
             {data?.sessions.length === 0 && (
-              <tr><td colSpan={7} className="empty">ยังไม่มีคาบเรียน — สร้างคาบแรกด้านบนได้เลย</td></tr>
+              <tr><td colSpan={8} className="empty">ยังไม่มีคาบเรียน — สร้างคาบแรกด้านบนได้เลย</td></tr>
             )}
             {data?.sessions.map((s) => (
               <tr key={s.id}>
@@ -103,6 +105,7 @@ export default function SessionsPage() {
                   {s.fail_count > 0 ? <span className="pill pill-fail">{s.fail_count}</span> : <span className="muted">0</span>}
                 </td>
                 <td className="num"><strong>{s.total_score}</strong></td>
+                <td><SessionMeta session={s} /></td>
                 <td className="num">
                   <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
                     <Link href={`/sessions/${s.id}`} className="btn btn-sm">เช็คชื่อ</Link>

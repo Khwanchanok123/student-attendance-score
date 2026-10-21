@@ -1,4 +1,4 @@
-import { db, logScores } from '@/lib/db';
+import { db, logScores, touchSession } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { json, route } from '@/lib/http';
 import { ATTENDANCE_POINTS, isComplete } from '@/lib/scoring';
@@ -52,6 +52,7 @@ export const PUT = route(async (req, { params }) => {
       reason: isComplete(after) ? 'เช็คเข้า-ออกครบ' : 'ยกเลิกการเช็คเข้า-ออก',
     }]);
   }
+  await touchSession(sql, sid, user);
   return json(after);
 });
 
@@ -74,5 +75,6 @@ export const POST = route(async (req, { params }) => {
   } else {
     return json({ error: 'คำสั่งไม่ถูกต้อง' }, 400);
   }
+  await touchSession(sql, sid, user);
   return json({ ok: true });
 });

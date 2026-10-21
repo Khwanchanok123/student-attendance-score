@@ -10,6 +10,7 @@ export const GET = route(async () => {
   const sql = await db();
   const sessions = await sql`
     SELECT se.id, se.title, se.lesson, to_char(se.date, 'YYYY-MM-DD') AS date,
+      se.created_at, se.created_by_name, se.updated_at, se.updated_by_name,
       COUNT(r.student_id)::int AS enrolled,
       COUNT(r.student_id) FILTER (WHERE r.check_in_at IS NOT NULL AND r.check_out_at IS NOT NULL)::int AS complete_count,
       COUNT(r.student_id) FILTER (WHERE r.check_out_at IS NOT NULL AND
@@ -27,7 +28,7 @@ export const GET = route(async () => {
 });
 
 export const POST = route(async (req) => {
-  await requireUser();
+  const user = await requireUser();
   const body = await req.json();
   const lesson = parseLesson(body.lesson);
   if (lesson === undefined) return json({ error: 'บทเรียนไม่ถูกต้อง' }, 400);
@@ -35,7 +36,8 @@ export const POST = route(async (req) => {
   const date = String(body.date || '').trim();
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: 'กรุณาใส่ชื่อคาบ (หรือเลือกบทเรียน) และวันที่' }, 400);
   const sql = await db();
-  const [row] = await sql`INSERT INTO sessions (title, date, lesson) VALUES (${title}, ${date}, ${lesson})
+  const [row] = await sql`INSERT INTO sessions (title, date, lesson, created_by_name, updated_at, updated_by_name)
+    VALUES (${title}, ${date}, ${lesson}, ${user.display_name}, now(), ${user.display_name})
     RETURNING id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date`;
   return json(row, 201);
 });

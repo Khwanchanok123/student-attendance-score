@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 export const GET = route(async (req, { params }) => {
   const id = Number((await params).id);
   const sql = await db();
-  const [session] = await sql`SELECT id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date FROM sessions WHERE id = ${id}`;
+  const [session] = await sql`SELECT id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date,
+    created_at, created_by_name, updated_at, updated_by_name FROM sessions WHERE id = ${id}`;
   if (!session) return json({ error: 'ไม่พบคาบเรียนนี้' }, 404);
   const rows = await sql`
     SELECT s.id AS student_id, s.code, s.name, r.check_in_at, r.check_out_at,
@@ -24,7 +25,7 @@ export const GET = route(async (req, { params }) => {
 });
 
 export const PATCH = route(async (req, { params }) => {
-  await requireUser();
+  const user = await requireUser();
   const id = Number((await params).id);
   const body = await req.json();
   const lesson = parseLesson(body.lesson);
@@ -33,8 +34,11 @@ export const PATCH = route(async (req, { params }) => {
   const date = String(body.date || '').trim();
   if (!title || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: 'กรุณาใส่ชื่อคาบและวันที่' }, 400);
   const sql = await db();
-  const [row] = await sql`UPDATE sessions SET title = ${title}, date = ${date}, lesson = ${lesson} WHERE id = ${id}
-    RETURNING id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date`;
+  const [row] = await sql`UPDATE sessions SET title = ${title}, date = ${date}, lesson = ${lesson},
+      updated_at = now(), updated_by_name = ${user.display_name}
+    WHERE id = ${id}
+    RETURNING id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date,
+      created_at, created_by_name, updated_at, updated_by_name`;
   if (!row) return json({ error: 'ไม่พบคาบเรียนนี้' }, 404);
   return json(row);
 });

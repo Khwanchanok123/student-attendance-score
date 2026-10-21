@@ -1,4 +1,4 @@
-import { db, logScores } from '@/lib/db';
+import { db, logScores, touchSession } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { json, route } from '@/lib/http';
 
@@ -32,5 +32,6 @@ export const POST = route(async (req, { params }) => {
     RETURNING student_id, check_in_at, check_out_at, extra_score::float AS extra_score, COALESCE(note, '') AS note`;
   if (!row) return json({ error: 'นักเรียนคนนี้ไม่ได้อยู่ในคาบนี้' }, 404);
   await logScores(sql, { sessionId: sid, kind: 'adjust', user }, [{ studentId: stu, delta, reason }]);
+  await touchSession(sql, sid, user);
   return json(row, 201);
 });

@@ -189,6 +189,9 @@ details.card summary { cursor: pointer; }
 
 .rank { font-weight: 700; font-size: 1.05rem; }
 
+.session-meta { margin-top: 4px; line-height: 1.6; }
+.session-meta strong { font-weight: 600; color: var(--text); }
+
 @media (max-width: 600px) {
   .user-box { margin-left: 0; }
   .topbar-inner { height: auto; padding-top: 10px; padding-bottom: 10px; flex-direction: column; align-items: flex-start; }
