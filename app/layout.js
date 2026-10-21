@@ -1,8 +1,9 @@
 import './globals.css';
 import Nav from './nav';
+import { APP_NAME } from '@/lib/brand';
 
 export const metadata = {
-  title: 'ระบบเช็คชื่อและคะแนน',
+  title: APP_NAME,
   description: 'เช็คชื่อเข้า-ออกและบันทึกคะแนนนักเรียนรายคาบ',
 };
 

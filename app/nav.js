@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { APP_ICON, APP_NAME } from '@/lib/brand';
 
 const links = [
   { href: '/', label: 'คาบเรียน' },
-  { href: '/students', label: 'นักเรียน' },
-  { href: '/summary', label: 'สรุปคะแนน' },
+  { href: '/students', label: 'รายชื่อนักเรียน' },
+  { href: '/summary', label: 'ตารางสรุปคะแนน' },
 ];
 
 export default function Nav() {
@@ -33,7 +34,7 @@ export default function Nav() {
   return (
     <header className="topbar">
       <div className="container topbar-inner">
-        <Link href="/" className="brand">📋 Attendent Score</Link>
+        <Link href="/" className="brand">{APP_ICON} {APP_NAME}</Link>
         <nav className="nav">
           {links.map((l) => (
             <Link key={l.href} href={l.href} className={isActive(l.href) ? 'active' : ''}>

@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { APP_ICON, APP_NAME } from '@/lib/brand';
 
 export default function LoginPage() {
   return (
@@ -42,7 +43,7 @@ function LoginForm() {
   return (
     <div className="login-wrap">
       <form className="card login-card" onSubmit={submit}>
-        <div className="brand" style={{ fontSize: '1.25rem', marginBottom: 4 }}>📋 เช็คชื่อ & คะแนน</div>
+        <div className="brand" style={{ fontSize: '1.25rem', marginBottom: 4 }}>{APP_ICON} {APP_NAME}</div>
         {needsSetup ? (
           <div className="muted small" style={{ marginBottom: 16 }}>
             ยังไม่มีผู้ใช้ในระบบ — สร้างบัญชี<strong>ผู้ดูแล</strong>คนแรก
