@@ -99,20 +99,21 @@ export default function SessionsPage() {
                 <td style={{ whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
                 <td>
                   <Link href={subjectPath(subject, `/sessions/${s.id}`)}><strong>{s.title}</strong></Link>
+                  {' '}{s.closed_at ? <span className="pill pill-ok small">✅ จบแล้ว</span> : <span className="pill pill-live small">🟢 กำลังเรียน</span>}
                   {s.lesson !== null && <div><span className="pill pill-lesson">{lessonName(s.lesson)}</span></div>}
                 </td>
                 <td className="num">{s.enrolled}</td>
                 <td className="num">{s.checked_count} / {s.enrolled}</td>
                 {subject.passRules && (
                   <td className="num">
-                    {s.fail_count > 0 ? <span className="pill pill-fail">{s.fail_count}</span> : <span className="muted">0</span>}
+                    {!s.closed_at ? <span className="muted">-</span> : s.fail_count > 0 ? <span className="pill pill-fail">{s.fail_count}</span> : <span className="muted">0</span>}
                   </td>
                 )}
                 <td className="num"><strong>{s.total_score}</strong></td>
                 <td><SessionMeta session={s} /></td>
                 <td className="num">
                   <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
-                    <Link href={subjectPath(subject, `/sessions/${s.id}`)} className="btn btn-sm">เช็คชื่อ</Link>
+                    <Link href={subjectPath(subject, `/sessions/${s.id}`)} className="btn btn-sm">{s.closed_at ? 'ดู' : 'เช็คชื่อ'}</Link>
                     <button className="btn-sm btn-danger" onClick={() => remove(s)}>ลบ</button>
                   </div>
                 </td>

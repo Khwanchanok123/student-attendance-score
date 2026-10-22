@@ -7,7 +7,7 @@ import { getSubject } from '@/lib/subjects';
 
 export const dynamic = 'force-dynamic';
 
-const SESSION_FIELDS = 'id, subject, title, lesson, to_char(date, \'YYYY-MM-DD\') AS date, created_at, created_by_name, updated_at, updated_by_name';
+const SESSION_FIELDS = 'id, subject, title, lesson, to_char(date, \'YYYY-MM-DD\') AS date, created_at, created_by_name, updated_at, updated_by_name, closed_at, closed_by_name';
 
 // ข้อมูลคาบ + นักเรียนที่อยู่ในคาบนี้พร้อมสถานะเช็คชื่อ/คะแนน
 export const GET = route(async (req, { params }) => {
@@ -26,7 +26,8 @@ export const GET = route(async (req, { params }) => {
     LEFT JOIN student_subject_summary t ON t.student_id = s.id AND t.subject = ${session.subject}
     WHERE r.session_id = ${id}
     ORDER BY s.name`;
-  return json({ session, rows });
+  // closed: ใช้ตัดสินผ่าน/ไม่ผ่าน (lib/scoring.js passStatus)
+  return json({ session, rows: rows.map((r) => ({ ...r, closed: Boolean(session.closed_at) })) });
 });
 
 // แก้ไขคาบ: { title, date, lesson? } (ย้ายวิชาไม่ได้)

@@ -14,7 +14,7 @@ export const PUT = route(async (req, { params }) => {
   const body = await req.json();
   const stu = Number(body.student_id);
   const sql = await db();
-  const { user, session } = await requireSessionAccess(sql, sid);
+  const { user, session } = await requireSessionAccess(sql, sid, { open: true });
   const [before] = await selectRecord(sql, sid, stu);
   if (!before) return json({ error: 'นักเรียนคนนี้ไม่ได้อยู่ในคาบนี้' }, 404);
 
@@ -48,7 +48,7 @@ export const POST = route(async (req, { params }) => {
   const { action } = await req.json();
   if (action !== 'check_all') return json({ error: 'คำสั่งไม่ถูกต้อง' }, 400);
   const sql = await db();
-  const { user, session } = await requireSessionAccess(sql, sid);
+  const { user, session } = await requireSessionAccess(sql, sid, { open: true });
 
   const done = await sql`UPDATE records SET check_in_at = now()
     WHERE session_id = ${sid} AND check_in_at IS NULL RETURNING student_id`;

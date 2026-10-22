@@ -16,7 +16,7 @@ export const GET = route(async () => {
       JOIN student_subject_summary t ON t.student_id = m.student_id AND t.subject = m.subject
       WHERE m.student_id = ${me.student_id}`,
     sql`SELECT se.subject, se.id AS session_id, se.title, se.lesson, to_char(se.date, 'YYYY-MM-DD') AS date,
-        r.check_in_at, r.extra_score::float AS extra_score
+        r.check_in_at, r.extra_score::float AS extra_score, (se.closed_at IS NOT NULL) AS closed
       FROM records r JOIN sessions se ON se.id = r.session_id
       WHERE r.student_id = ${me.student_id}
       ORDER BY se.date DESC, se.id DESC`,

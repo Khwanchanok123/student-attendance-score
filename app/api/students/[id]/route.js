@@ -21,7 +21,7 @@ export const GET = route(async (req, { params }) => {
       LEFT JOIN student_accounts a ON a.student_id = s.id
       WHERE s.id = ${id}`,
     sql`SELECT se.id AS session_id, se.title, se.lesson, to_char(se.date, 'YYYY-MM-DD') AS date,
-        r.check_in_at, r.extra_score::float AS extra_score
+        r.check_in_at, r.extra_score::float AS extra_score, (se.closed_at IS NOT NULL) AS closed
       FROM records r
       JOIN sessions se ON se.id = r.session_id
       WHERE r.student_id = ${id} AND se.subject = ${subject.slug}

@@ -264,3 +264,11 @@ details.card summary { cursor: pointer; }
 .pending-item { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(0, 0, 0, 0.06); }
 .danger-zone { border-color: #f3c2c2; margin-top: 20px; }
 .subject-card-locked { opacity: 0.6; cursor: default; }
+
+/* ---- ปิดคลาส ---- */
+.pill-live { background: #e6f6ff; color: #0369a1; }
+.status-pill { font-size: 0.8rem; vertical-align: middle; }
+.closed-banner {
+  background: var(--success-soft); color: var(--success); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 12px; font-size: 0.92rem;
+}

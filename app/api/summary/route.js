@@ -15,7 +15,8 @@ export const GET = route(async (req) => {
       ORDER BY s.name`,
     sql`SELECT id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date FROM sessions
       WHERE subject = ${subject.slug} ORDER BY date, id`,
-    sql`SELECT r.session_id, r.student_id, r.check_in_at, r.extra_score::float AS extra_score
+    sql`SELECT r.session_id, r.student_id, r.check_in_at, r.extra_score::float AS extra_score,
+        (se.closed_at IS NOT NULL) AS closed
       FROM records r JOIN sessions se ON se.id = r.session_id
       WHERE se.subject = ${subject.slug}`,
   ]);

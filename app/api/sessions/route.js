@@ -13,10 +13,11 @@ export const GET = route(async (req) => {
   const sql = await db();
   const sessions = await sql`
     SELECT se.id, se.title, se.lesson, to_char(se.date, 'YYYY-MM-DD') AS date,
-      se.created_at, se.created_by_name, se.updated_at, se.updated_by_name,
+      se.created_at, se.created_by_name, se.updated_at, se.updated_by_name, se.closed_at, se.closed_by_name,
       COUNT(r.student_id)::int AS enrolled,
       COUNT(r.student_id) FILTER (WHERE r.check_in_at IS NOT NULL)::int AS checked_count,
-      COUNT(r.student_id) FILTER (WHERE r.check_in_at IS NOT NULL AND ${points}::numeric + r.extra_score < ${PASS_SCORE}
+      COUNT(r.student_id) FILTER (WHERE se.closed_at IS NOT NULL AND r.check_in_at IS NOT NULL
+        AND ${points}::numeric + r.extra_score < ${PASS_SCORE}
       )::int AS fail_count,
       COALESCE(SUM(CASE WHEN r.check_in_at IS NOT NULL THEN ${points}::numeric ELSE 0 END + r.extra_score), 0)::float
         AS total_score

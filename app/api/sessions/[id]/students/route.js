@@ -9,7 +9,7 @@ export const POST = route(async (req, { params }) => {
   const sid = Number((await params).id);
   const body = await req.json();
   const sql = await db();
-  const { user, session } = await requireSessionAccess(sql, sid);
+  const { user, session } = await requireSessionAccess(sql, sid, { open: true });
 
   const ids = (Array.isArray(body.student_ids) ? body.student_ids : []).map(Number).filter(Number.isInteger);
   const fresh = (Array.isArray(body.new_students) ? body.new_students : [])
@@ -31,7 +31,7 @@ export const DELETE = route(async (req, { params }) => {
   const sid = Number((await params).id);
   const stu = Number(new URL(req.url).searchParams.get('student_id'));
   const sql = await db();
-  const { user, session } = await requireSessionAccess(sql, sid);
+  const { user, session } = await requireSessionAccess(sql, sid, { open: true });
   const [rec] = await sql`DELETE FROM records WHERE session_id = ${sid} AND student_id = ${stu}
     RETURNING check_in_at, extra_score::float AS extra_score`;
   const total = rec ? recordTotal(rec, session.subjectInfo) : 0;

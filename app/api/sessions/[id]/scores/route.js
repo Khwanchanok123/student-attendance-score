@@ -28,7 +28,7 @@ export const POST = route(async (req, { params }) => {
   if (!reason) return json({ error: 'กรุณาใส่เหตุผล' }, 400);
 
   const sql = await db();
-  const { user, session } = await requireSessionAccess(sql, sid);
+  const { user, session } = await requireSessionAccess(sql, sid, { open: true });
 
   if (body.all) {
     const onlyChecked = Boolean(body.only_checked);

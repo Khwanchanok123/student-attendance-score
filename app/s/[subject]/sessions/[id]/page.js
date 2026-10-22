@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { api, formatDate, formatDelta, formatTime } from '@/lib/api';
+import { api, formatDate, formatDateTime, formatDelta, formatTime } from '@/lib/api';
 import { LESSONS, PREREQUISITES, lessonName, requirementText } from '@/lib/lessons';
 import { PASS_SCORE, attendancePoints, isChecked, passStatus, recordTotal } from '@/lib/scoring';
 import { subjectPath } from '@/lib/subjects';
@@ -109,6 +109,26 @@ export default function SessionPage() {
     }
   }
 
+  async function setClosed(close) {
+    if (close) {
+      // ผลที่จะได้ถ้าปิดตอนนี้ (passStatus ตัดสินเฉพาะคาบที่ปิดแล้ว)
+      const preview = rows.map((r) => passStatus({ ...r, closed: true }, subject));
+      const result = subject.passRules
+        ? `\n\nผ่าน ${preview.filter((s) => s === 'pass').length} คน · ไม่ผ่าน ${preview.filter((s) => s === 'fail').length} คน`
+          + ` · ไม่ได้เช็คชื่อ ${rows.length - stats.checked} คน`
+        : '';
+      if (!confirm(`ปิดคลาส "${session.title}"?${result}\n\nหลังปิดจะเช็คชื่อ ให้คะแนน และเพิ่ม/นำนักเรียนออกไม่ได้ จนกว่าจะเปิดคลาสอีกครั้ง`)) return;
+    } else if (!confirm('เปิดคลาสอีกครั้ง? จะกลับมาแก้ไขเช็คชื่อและคะแนนได้ และผลผ่าน/ไม่ผ่านจะถูกยกเลิกจนกว่าจะปิดคลาสใหม่')) {
+      return;
+    }
+    try {
+      await api(`/api/sessions/${id}/close`, { method: 'POST', body: close ? {} : { reopen: true } });
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
   async function removeSession() {
     if (!confirm(`ลบคาบ "${session.title}" และข้อมูลเช็คชื่อทั้งหมด?`)) return;
     await api(`/api/sessions/${id}`, { method: 'DELETE' });
@@ -132,6 +152,7 @@ export default function SessionPage() {
   }
 
   const scoringRow = scoring && rows.find((r) => r.student_id === scoring);
+  const closed = Boolean(session.closed_at);
 
   return (
     <>
@@ -153,7 +174,10 @@ export default function SessionPage() {
           </form>
         ) : (
           <div>
-            <h1>{session.title}</h1>
+            <h1>
+              {session.title}{' '}
+              {closed ? <span className="pill pill-ok status-pill">✅ ปิดคลาสแล้ว</span> : <span className="pill pill-live status-pill">🟢 กำลังเรียน</span>}
+            </h1>
             <div className="muted">
               {formatDate(session.date)}
               {session.lesson !== null && <> · <span className="pill pill-lesson">{lessonName(session.lesson)}</span></>}
@@ -168,15 +192,27 @@ export default function SessionPage() {
             <SessionMeta session={session} inline />
           </div>
         )}
-        {rows.length > 0 && (
+        {!editing && (
           <div className="row">
-            <button onClick={checkAll}>✓ เช็คชื่อทั้งหมด</button>
-            <button className="btn-plus" onClick={() => setBulkScore(5)}>+5 ทั้งคลาส</button>
-            <button className="btn-plus" onClick={() => setBulkScore(10)}>+10 ทั้งคลาส</button>
+            {!closed && rows.length > 0 && (
+              <>
+                <button onClick={checkAll}>✓ เช็คชื่อทั้งหมด</button>
+                <button className="btn-plus" onClick={() => setBulkScore(5)}>+5 ทั้งคลาส</button>
+                <button className="btn-plus" onClick={() => setBulkScore(10)}>+10 ทั้งคลาส</button>
+              </>
+            )}
+            {closed
+              ? <button onClick={() => setClosed(false)}>🔓 เปิดคลาสอีกครั้ง</button>
+              : <button className="btn-primary" onClick={() => setClosed(true)}>🏁 ปิดคลาส</button>}
           </div>
         )}
       </div>
 
+      {closed && (
+        <div className="closed-banner">
+          🔒 ปิดคลาสแล้วโดย {session.closed_by_name || '-'} · {formatDateTime(session.closed_at)} — การเช็คชื่อและคะแนนถูกล็อก
+        </div>
+      )}
       {error && <div className="error">{error}</div>}
       {flash && <div className="flash" style={{ marginBottom: 12 }}>✓ {flash}</div>}
 
@@ -186,7 +222,10 @@ export default function SessionPage() {
           <div className="label">เช็คชื่อแล้ว{points ? ` (+${points})` : ''}</div>
           <div className="value">{stats.checked} / {rows.length}</div>
         </div>
-        {subject.passRules && (
+        {subject.passRules && !closed && (
+          <div className="stat"><div className="label">ผ่าน/ไม่ผ่าน</div><div className="value muted" style={{ fontSize: '0.95rem' }}>ตัดสินตอนปิดคลาส</div></div>
+        )}
+        {subject.passRules && closed && (
           <>
             <div className="stat"><div className="label">ผ่าน ({PASS_SCORE} ขึ้นไป)</div><div className="value" style={{ color: stats.passed ? 'var(--success)' : undefined }}>{stats.passed}</div></div>
             <div className="stat"><div className="label">ไม่ผ่าน (ต่ำกว่า {PASS_SCORE})</div><div className="value" style={{ color: stats.failed ? 'var(--danger)' : undefined }}>{stats.failed}</div></div>
@@ -195,7 +234,7 @@ export default function SessionPage() {
         <div className="stat"><div className="label">คะแนนรวมคาบ</div><div className="value">{stats.total}</div></div>
       </div>
 
-      <div className="card">
+      {!closed && <div className="card">
         <h2>เพิ่มนักเรียนเข้าคาบ</h2>
         {PREREQUISITES[session.lesson] && (
           <div className="muted small" style={{ marginTop: -6, marginBottom: 8 }}>
@@ -213,10 +252,10 @@ export default function SessionPage() {
             await load();
           }}
         />
-      </div>
+      </div>}
 
       {rows.length === 0 ? (
-        <div className="card empty">ยังไม่มีนักเรียนในคาบนี้ — ค้นหาหรือพิมพ์ชื่อเพื่อเพิ่มด้านบน</div>
+        <div className="card empty">ยังไม่มีนักเรียนในคาบนี้{!closed && ' — ค้นหาหรือพิมพ์ชื่อเพื่อเพิ่มด้านบน'}</div>
       ) : (
         <>
           <div className="row" style={{ marginBottom: 12 }}>
@@ -242,6 +281,7 @@ export default function SessionPage() {
                     r={r}
                     subject={subject}
                     lesson={session.lesson}
+                    closed={closed}
                     busy={busy[r.student_id]}
                     onCheck={toggleCheck}
                     onScore={() => setScoring(r.student_id)}
@@ -274,6 +314,7 @@ export default function SessionPage() {
         <ScoreDialog
           sessionId={id}
           subject={subject}
+          closed={closed}
           r={scoringRow}
           onSaved={(rec) => patchRow(scoringRow.student_id, rec)}
           onSaveNote={(note) => update(scoringRow.student_id, { note })}
@@ -284,7 +325,7 @@ export default function SessionPage() {
   );
 }
 
-function Row({ r, subject, lesson, busy, onCheck, onScore, onRemove }) {
+function Row({ r, subject, lesson, closed, busy, onCheck, onScore, onRemove }) {
   const status = passStatus(r, subject);
   return (
     <tr className={status === 'fail' ? 'row-fail' : ''}>
@@ -294,7 +335,7 @@ function Row({ r, subject, lesson, busy, onCheck, onScore, onRemove }) {
         {r.note && <div className="muted small">📝 {r.note}</div>}
       </td>
       <td className="center">
-        <button className={`check ${isChecked(r) ? 'on-out' : ''}`} disabled={busy} onClick={() => onCheck(r)}>
+        <button className={`check ${isChecked(r) ? 'on-out' : ''}`} disabled={busy || closed} onClick={() => onCheck(r)}>
           {isChecked(r) ? `✓ ${formatTime(r.check_in_at)}` : 'เช็คชื่อ'}
         </button>
       </td>
@@ -312,8 +353,14 @@ function Row({ r, subject, lesson, busy, onCheck, onScore, onRemove }) {
       {subject.passRules && <td className="center"><PassTag status={status} /></td>}
       <td className="num">
         <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
-          <button className="btn-sm btn-primary" disabled={busy} onClick={onScore}>± คะแนน</button>
-          <button className="btn-sm btn-danger" title="นำออกจากคาบ" disabled={busy} onClick={() => onRemove(r)}>✕</button>
+          {closed
+            ? <button className="btn-sm" onClick={onScore}>ประวัติ</button>
+            : (
+              <>
+                <button className="btn-sm btn-primary" disabled={busy} onClick={onScore}>± คะแนน</button>
+                <button className="btn-sm btn-danger" title="นำออกจากคาบ" disabled={busy} onClick={() => onRemove(r)}>✕</button>
+              </>
+            )}
         </div>
       </td>
     </tr>
@@ -346,7 +393,7 @@ function BulkScoreDialog({ sessionId, amount, total, checked, onDone, onClose })
 }
 
 // หน้าต่างเพิ่ม/ลดคะแนนของนักเรียนในคาบนี้ พร้อมหมายเหตุและประวัติ
-function ScoreDialog({ sessionId, subject, r, onSaved, onSaveNote, onClose }) {
+function ScoreDialog({ sessionId, subject, closed, r, onSaved, onSaveNote, onClose }) {
   const [note, setNote] = useState(r.note);
   const [logs, setLogs] = useState(null);
 
@@ -379,18 +426,21 @@ function ScoreDialog({ sessionId, subject, r, onSaved, onSaveNote, onClose }) {
         <div><div className="muted small">คะแนนในคาบ</div><div className="big" style={{ color: 'var(--primary)' }}>{recordTotal(r, subject)}</div></div>
         {subject.passRules && (
           <div style={{ marginLeft: 'auto', alignSelf: 'center' }}>
-            {status ? <PassTag status={status} /> : <span className="muted small">ผ่าน/ไม่ผ่าน แสดงหลังเช็คชื่อ</span>}
+            {status ? <PassTag status={status} /> : <span className="muted small">ผ่าน/ไม่ผ่าน ตัดสินตอนปิดคลาส</span>}
           </div>
         )}
       </div>
 
-      <ScoreForm onSubmit={submit} />
+      {closed
+        ? <div className="closed-banner">🔒 คาบนี้ปิดคลาสแล้ว — เปิดคลาสอีกครั้งเพื่อเพิ่ม/ลดคะแนน</div>
+        : <ScoreForm onSubmit={submit} />}
 
       <label className="field" style={{ marginTop: 16 }}>
         <span>โน้ตประจำคาบ (ไม่มีผลกับคะแนน)</span>
         <input
           value={note}
           placeholder="-"
+          disabled={closed}
           onChange={(e) => setNote(e.target.value)}
           onBlur={() => note !== r.note && onSaveNote(note)}
         />
