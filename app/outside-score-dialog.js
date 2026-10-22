@@ -4,24 +4,24 @@ import { useEffect, useState } from 'react';
 import { api, formatDelta } from '@/lib/api';
 import { LogList, Modal, ScoreForm } from './score-form';
 
-// หน้าต่างเพิ่ม/ลดคะแนนนอกคลาส (นับรวมในคะแนนรวมของนักเรียน)
+// หน้าต่างเพิ่ม/ลดคะแนนนอกคลาสในวิชา (นับรวมในคะแนนรวมของนักเรียนในวิชานั้น)
 // student = { id, code, name }, onSaved() เรียกหลังบันทึกเพื่อให้หน้าที่เปิดโหลดคะแนนใหม่
-export default function OutsideScoreDialog({ student, onSaved, onClose }) {
+export default function OutsideScoreDialog({ subject, student, onSaved, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
   const load = () =>
-    api(`/api/students/${student.id}/scores`).then(setData).catch((e) => setError(e.message));
-  useEffect(() => { load(); }, [student.id]);
+    api(`/api/students/${student.id}/scores?subject=${subject.slug}`).then(setData).catch((e) => setError(e.message));
+  useEffect(() => { load(); }, [student.id, subject.slug]);
 
   async function submit(delta, reason) {
-    await api(`/api/students/${student.id}/scores`, { method: 'POST', body: { delta, reason } });
+    await api(`/api/students/${student.id}/scores`, { method: 'POST', body: { subject: subject.slug, delta, reason } });
     await load();
     onSaved?.();
   }
 
   return (
-    <Modal title={student.name} subtitle={`รหัส ${student.code || '-'} · คะแนนนอกคลาส`} onClose={onClose}>
+    <Modal title={student.name} subtitle={`คะแนนนอกคลาส · ${subject.name}`} onClose={onClose}>
       {error && <div className="error">{error}</div>}
       <div className="score-breakdown">
         <div><div className="muted small">คะแนนจากคลาส</div><div className="big">{data ? data.class_score : '…'}</div></div>

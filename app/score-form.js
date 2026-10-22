@@ -9,9 +9,9 @@ const QUICK = [1, 2, 5, 10];
 
 // ฟอร์มเพิ่ม/ลดคะแนน: จำนวน + หมายเหตุ (เลือก preset หรือพิมพ์เอง)
 // onSubmit(delta, reason) ต้องคืน Promise; ถ้า throw จะแสดงข้อความผิดพลาด
-export function ScoreForm({ onSubmit }) {
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
+export function ScoreForm({ onSubmit, initialAmount = '', initialReason = '' }) {
+  const [amount, setAmount] = useState(String(initialAmount));
+  const [reason, setReason] = useState(initialReason);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [presets, setPresets] = useState(null);

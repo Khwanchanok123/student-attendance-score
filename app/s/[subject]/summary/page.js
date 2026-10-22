@@ -4,13 +4,18 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { api, formatDate, formatDelta } from '@/lib/api';
 import { lessonName } from '@/lib/lessons';
-import { countedSessionIds, isComplete, passStatus, recordTotal } from '@/lib/scoring';
+import { PASS_SCORE, countedSessionIds, isChecked, passStatus, recordTotal } from '@/lib/scoring';
+import { subjectPath } from '@/lib/subjects';
+import { useSubject } from '../subject-nav';
 
 export default function SummaryPage() {
+  const subject = useSubject();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => { api('/api/summary').then(setData).catch((e) => setError(e.message)); }, []);
+  useEffect(() => {
+    api(`/api/summary?subject=${subject.slug}`).then(setData).catch((e) => setError(e.message));
+  }, [subject.slug]);
 
   const table = useMemo(() => {
     if (!data) return null;
@@ -21,7 +26,7 @@ export default function SummaryPage() {
       const entries = data.records
         .filter((r) => r.student_id === st.id)
         .map((r) => ({ ...r, lesson: sessionById.get(r.session_id).lesson, date: sessionById.get(r.session_id).date }));
-      const counted = countedSessionIds(entries);
+      const counted = countedSessionIds(entries, subject);
       const cells = data.sessions.map((se) => {
         const r = byKey.get(`${st.id}:${se.id}`);
         return r && { ...r, counted: counted.has(se.id) };
@@ -29,25 +34,26 @@ export default function SummaryPage() {
       return {
         ...st,
         cells,
-        attended: cells.filter(isComplete).length,
-        total: cells.reduce((sum, c) => sum + (c?.counted ? recordTotal(c) : 0), 0) + st.outside_score,
+        attended: cells.filter(isChecked).length,
+        total: cells.reduce((sum, c) => sum + (c?.counted ? recordTotal(c, subject) : 0), 0) + st.outside_score,
       };
     });
-    // เรียงคะแนนรวมจากมากไปน้อย (คะแนนเท่ากันเรียงตามรหัส) และให้อันดับร่วมกัน เช่น 1, 2, 2, 4
+    // เรียงคะแนนรวมจากมากไปน้อย (คะแนนเท่ากันเรียงตามชื่อ) และให้อันดับร่วมกัน เช่น 1, 2, 2, 4
     rows.sort((a, b) => b.total - a.total);
     rows.forEach((r, i) => { r.rank = i > 0 && r.total === rows[i - 1].total ? rows[i - 1].rank : i + 1; });
-    const sessionTotals = data.sessions.map((_, i) => rows.reduce((sum, r) => sum + (r.cells[i] ? recordTotal(r.cells[i]) : 0), 0));
+    const sessionTotals = data.sessions.map((_, i) =>
+      rows.reduce((sum, r) => sum + (r.cells[i] ? recordTotal(r.cells[i], subject) : 0), 0));
     return { rows, sessionTotals, grand: rows.reduce((s, r) => s + r.total, 0) };
-  }, [data]);
+  }, [data, subject]);
 
   function exportCsv() {
-    const head = ['อันดับ', 'รหัส', 'ชื่อ', ...data.sessions.map((s) => `${s.date} ${s.title}`), 'นอกคลาส', 'เข้าครบ (คาบ)', 'คะแนนรวม'];
+    const head = ['อันดับ', 'ชื่อ', ...data.sessions.map((s) => `${s.date} ${s.title}`), 'นอกคลาส', 'เช็คชื่อ (คาบ)', 'คะแนนรวม'];
     const lines = table.rows.map((r) => [
-      r.rank, r.code || '', r.name,
+      r.rank, r.name,
       ...r.cells.map((c) => {
         if (!c) return '';
-        const status = passStatus(c);
-        return `${recordTotal(c)}${status === 'fail' ? ' (ไม่ผ่าน)' : ''}${c.counted ? '' : ' (ไม่นับ)'}`;
+        const status = passStatus(c, subject);
+        return `${recordTotal(c, subject)}${status === 'fail' ? ' (ไม่ผ่าน)' : ''}${c.counted ? '' : ' (ไม่นับ)'}`;
       }),
       r.outside_score, r.attended, r.total,
     ]);
@@ -58,7 +64,7 @@ export default function SummaryPage() {
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `สรุปคะแนน-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `สรุปคะแนน-${subject.name}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
@@ -66,16 +72,13 @@ export default function SummaryPage() {
   return (
     <>
       <div className="page-head">
-        <div>
-          <h1>สรุปคะแนน</h1>
-          <div className="muted">เรียงตามคะแนนรวมจากมากไปน้อย</div>
-        </div>
+        <div className="muted">เรียงตามคะแนนรวมจากมากไปน้อย</div>
         {table && table.rows.length > 0 && <button onClick={exportCsv}>⬇ ดาวน์โหลด Excel (CSV)</button>}
       </div>
 
       <div className="legend small muted">
-        <span><span className="cell-fail-sample">8</span> ไม่ผ่าน (ต่ำกว่า 10 หลังเช็คออก)</span>
-        <span><s>15</s> ไม่นับ (เรียนบทเดิมซ้ำ นับเฉพาะครั้งที่สูงสุด)</span>
+        {subject.passRules && <span><span className="cell-fail-sample">8</span> ไม่ผ่าน (ต่ำกว่า {PASS_SCORE})</span>}
+        {subject.lessons && <span><s>15</s> ไม่นับ (เรียนบทเดิมซ้ำ นับเฉพาะครั้งที่สูงสุด)</span>}
         <span>– ไม่ได้อยู่ในคาบ</span>
       </div>
 
@@ -84,18 +87,17 @@ export default function SummaryPage() {
 
       {table && (
         table.rows.length === 0 ? (
-          <div className="card empty">ยังไม่มีข้อมูลนักเรียน</div>
+          <div className="card empty">ยังไม่มีนักเรียนในวิชานี้</div>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th className="center">อันดับ</th>
-                  <th>รหัส</th>
                   <th>ชื่อ</th>
                   {data.sessions.map((s) => (
                     <th key={s.id} className="num">
-                      <Link href={`/sessions/${s.id}`}>{s.title}</Link>
+                      <Link href={subjectPath(subject, `/sessions/${s.id}`)}>{s.title}</Link>
                       <div className="small muted" style={{ fontWeight: 400 }}>{formatDate(s.date)}</div>
                       {s.lesson !== null && s.title !== lessonName(s.lesson) && (
                         <div className="small muted" style={{ fontWeight: 400 }}>{lessonName(s.lesson)}</div>
@@ -103,7 +105,7 @@ export default function SummaryPage() {
                     </th>
                   ))}
                   <th className="num">นอกคลาส</th>
-                  <th className="num">เข้าครบ</th>
+                  <th className="num">เช็คชื่อ</th>
                   <th className="num">รวม</th>
                 </tr>
               </thead>
@@ -111,13 +113,12 @@ export default function SummaryPage() {
                 {table.rows.map((r) => (
                   <tr key={r.id}>
                     <td className="center"><span className={`rank rank-${r.rank}`}>{r.rank <= 3 && r.total > 0 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank}</span></td>
-                    <td className="muted">{r.code || '-'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}><Link href={`/students/${r.id}`}>{r.name}</Link></td>
+                    <td style={{ whiteSpace: 'nowrap' }}><Link href={subjectPath(subject, `/students/${r.id}`)}>{r.name}</Link></td>
                     {r.cells.map((c, i) => (
-                      <td key={i} className={`num ${c && passStatus(c) === 'fail' ? 'cell-fail' : ''}`}>
+                      <td key={i} className={`num ${c && passStatus(c, subject) === 'fail' ? 'cell-fail' : ''}`}>
                         {!c ? <span className="muted">–</span>
-                          : c.counted ? recordTotal(c)
-                            : <s className="muted" title="ไม่นับ: มีครั้งอื่นของบทนี้ที่คะแนนสูงกว่า">{recordTotal(c)}</s>}
+                          : c.counted ? recordTotal(c, subject)
+                            : <s className="muted" title="ไม่นับ: มีครั้งอื่นของบทนี้ที่คะแนนสูงกว่า">{recordTotal(c, subject)}</s>}
                       </td>
                     ))}
                     <td className="num">{r.outside_score ? formatDelta(r.outside_score) : <span className="muted">0</span>}</td>
@@ -128,7 +129,7 @@ export default function SummaryPage() {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3}>รวมทั้งหมด</td>
+                  <td colSpan={2}>รวมทั้งหมด</td>
                   {table.sessionTotals.map((t, i) => <td key={i} className="num">{t}</td>)}
                   <td className="num">{formatDelta(table.rows.reduce((s, r) => s + r.outside_score, 0))}</td>
                   <td></td>

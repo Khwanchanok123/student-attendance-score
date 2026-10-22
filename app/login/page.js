@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
@@ -31,9 +32,10 @@ function LoginForm() {
     setBusy(true);
     setError('');
     try {
-      await api(needsSetup ? '/api/auth/setup' : '/api/auth/login', { method: 'POST', body: form });
+      const res = await api(needsSetup ? '/api/auth/setup' : '/api/auth/login', { method: 'POST', body: form });
       const next = params.get('next');
-      window.location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+      if (res.kind === 'student') window.location.href = '/me';
+      else window.location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
     } catch (e) {
       setError(e.message);
       setBusy(false);
@@ -79,6 +81,11 @@ function LoginForm() {
             <button className="btn-primary" style={{ width: '100%', marginTop: 8 }} disabled={busy}>
               {needsSetup ? 'สร้างบัญชีและเข้าสู่ระบบ' : 'เข้าสู่ระบบ'}
             </button>
+            {!needsSetup && (
+              <div className="muted small" style={{ textAlign: 'center', marginTop: 14 }}>
+                นักเรียนยังไม่มีบัญชี? <Link href="/signup">สมัครเพื่อดูคะแนนของตัวเอง</Link>
+              </div>
+            )}
           </>
         )}
       </form>

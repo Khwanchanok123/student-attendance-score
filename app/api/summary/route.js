@@ -1,16 +1,23 @@
 import { db } from '@/lib/db';
-import { json, route } from '@/lib/http';
+import { requireSubjectAccess } from '@/lib/auth';
+import { json, route, searchParam } from '@/lib/http';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = route(async () => {
+// ข้อมูลตารางสรุปคะแนนของวิชา: ?subject=divination
+export const GET = route(async (req) => {
+  const { subject } = await requireSubjectAccess(searchParam(req, 'subject'));
   const sql = await db();
   const [students, sessions, records] = await Promise.all([
-    sql`SELECT s.id, s.code, s.name, t.outside_score
-      FROM students s JOIN student_summary t ON t.student_id = s.id
-      ORDER BY length(s.code) NULLS LAST, s.code, s.name`,
-    sql`SELECT id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date FROM sessions ORDER BY date, id`,
-    sql`SELECT session_id, student_id, check_in_at, check_out_at, extra_score::float AS extra_score FROM records`,
+    sql`SELECT s.id, s.name, t.outside_score
+      FROM student_subject_summary t JOIN students s ON s.id = t.student_id
+      WHERE t.subject = ${subject.slug}
+      ORDER BY s.name`,
+    sql`SELECT id, title, lesson, to_char(date, 'YYYY-MM-DD') AS date FROM sessions
+      WHERE subject = ${subject.slug} ORDER BY date, id`,
+    sql`SELECT r.session_id, r.student_id, r.check_in_at, r.extra_score::float AS extra_score
+      FROM records r JOIN sessions se ON se.id = r.session_id
+      WHERE se.subject = ${subject.slug}`,
   ]);
   return json({ students, sessions, records });
 });
